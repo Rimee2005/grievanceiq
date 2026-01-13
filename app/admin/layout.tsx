@@ -76,7 +76,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
+    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-800 transition-colors">
       <Sidebar
         userName={user?.name}
         userRole={user?.role}
@@ -88,10 +88,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       
       {/* Mobile Top App Bar with Hamburger */}
       {isMobile && (
-        <div className="fixed top-0 left-0 right-0 h-14 bg-gray-800 dark:bg-gray-900 border-b border-gray-700 z-40 flex items-center px-4 lg:hidden">
+        <div className="fixed top-0 left-0 right-0 h-14 bg-gray-800 dark:bg-gray-950 border-b border-gray-700 dark:border-gray-800 z-40 flex items-center px-4 lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 hover:bg-gray-700 rounded transition-colors duration-200"
+            className="p-2 hover:bg-gray-700 dark:hover:bg-gray-800 rounded transition-colors duration-200"
             aria-label="Open sidebar menu"
             title="Open Menu"
           >
@@ -118,11 +118,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flex-1 
           overflow-auto 
           bg-gray-100 
-          dark:bg-gray-900 
+          dark:bg-gray-800 
           transition-all 
           duration-[250ms] 
           ease-in-out
-          ${isMobile ? 'ml-0' : sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
+          ${isMobile ? 'ml-0' : sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[280px]'}
         `}
       >
         {/* Content Container - Adjusts padding based on sidebar state */}

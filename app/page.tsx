@@ -146,21 +146,39 @@ export default function Home() {
         </div>
 
         {/* Features Section */}
-        <div className="mt-12 md:mt-20 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-gray-900 dark:text-white">{t('home.features.title')}</h3>
-            <ul className="space-y-2 text-gray-700 dark:text-gray-300 text-sm md:text-base">
+        <div className="mt-12 md:mt-20 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-10">
+          {/* Key Features Box */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 transition-all duration-200 hover:shadow-xl border border-gray-100 dark:border-gray-700">
+            <h3 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-gray-900 dark:text-white">
+              {t('home.features.title')}
+            </h3>
+            <ul className="space-y-3.5 md:space-y-4">
               {features.map((feature, index) => (
-                <li key={index}>✓ {feature[language]}</li>
+                <li key={index} className="flex items-start gap-3 text-gray-700 dark:text-gray-300 text-base md:text-lg">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mt-0.5">
+                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                  <span className="flex-1 leading-relaxed">{feature[language]}</span>
+                </li>
               ))}
             </ul>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors">
-            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-gray-900 dark:text-white">{t('home.howitworks.title')}</h3>
-            <ol className="space-y-3 text-gray-700 dark:text-gray-300 list-decimal list-inside text-sm md:text-base">
+          {/* How It Works Box */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 transition-all duration-200 hover:shadow-xl border border-gray-100 dark:border-gray-700">
+            <h3 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-gray-900 dark:text-white">
+              {t('home.howitworks.title')}
+            </h3>
+            <ol className="space-y-3.5 md:space-y-4">
               {howItWorks.map((step, index) => (
-                <li key={index}>{step[language]}</li>
+                <li key={index} className="flex items-start gap-3 text-gray-700 dark:text-gray-300 text-base md:text-lg">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-0.5 font-bold text-blue-600 dark:text-blue-400 text-sm">
+                    {index + 1}
+                  </span>
+                  <span className="flex-1 leading-relaxed">{step[language]}</span>
+                </li>
               ))}
             </ol>
           </div>

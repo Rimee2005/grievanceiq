@@ -25,11 +25,24 @@ export default function AdminDashboard() {
   const fetchAnalytics = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/admin/login';
+        return;
+      }
+
       const response = await fetch('/api/analytics', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      // Handle 401 Unauthorized - redirect to login
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = '/admin/login';
+        return;
+      }
 
       const data = await response.json();
 
@@ -39,7 +52,10 @@ export default function AdminDashboard() {
         toast.error(data.error || t('track.error'));
       }
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching analytics:', error);
+      }
       toast.error(t('track.error.generic'));
     } finally {
       setLoading(false);

@@ -46,13 +46,23 @@ export default function AllComplaints() {
   const fetchDebugInfo = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) return;
+      
       const response = await fetch('/api/complaints/debug-images', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = '/admin/login';
+        return;
+      }
+      
       const data = await response.json();
-      if (response.ok) {
+      if (response.ok && process.env.NODE_ENV === 'development') {
         console.log('=== DEBUG INFO FROM DATABASE ===');
         console.log('Total complaints in DB:', data.debug.totalComplaints);
         console.log('Complaints with imageUrl:', data.debug.complaintsWithImageUrl);
@@ -62,7 +72,9 @@ export default function AllComplaints() {
         console.log('=== END DEBUG INFO ===');
       }
     } catch (error) {
-      console.error('Error fetching debug info:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching debug info:', error);
+      }
     }
   };
 
@@ -70,6 +82,11 @@ export default function AllComplaints() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/admin/login';
+        return;
+      }
+
       const params = new URLSearchParams({ admin: 'true' });
       if (filters.category) params.append('category', filters.category);
       if (filters.priority) params.append('priority', filters.priority);
@@ -83,53 +100,61 @@ export default function AllComplaints() {
         },
       });
 
+      // Handle 401 Unauthorized - redirect to login
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = '/admin/login';
+        return;
+      }
+
       const data = await response.json();
 
       if (response.ok) {
         const fetchedComplaints = data.complaints || [];
         
-        // COMPREHENSIVE DEBUG: Log everything
-        // console.log('=== ADMIN UI DEBUG START ===');
-        // console.log('Raw API Response:', data);
-        // console.log('Total complaints received:', fetchedComplaints.length);
-        
-        // Log ALL complaints with their imageUrl status
-        fetchedComplaints.forEach((c: Complaint, index: number) => {
-          console.log(`Complaint ${index + 1}:`, {
-            id: c._id,
-            hasImageUrl: !!c.imageUrl,
-            imageUrlType: typeof c.imageUrl,
-            imageUrlValue: c.imageUrl,
-            imageUrlLength: c.imageUrl?.length || 0,
-            allKeys: Object.keys(c),
+        // Debug logging only in development
+        if (process.env.NODE_ENV === 'development') {
+          // Log ALL complaints with their imageUrl status
+          fetchedComplaints.forEach((c: Complaint, index: number) => {
+            console.log(`Complaint ${index + 1}:`, {
+              id: c._id,
+              hasImageUrl: !!c.imageUrl,
+              imageUrlType: typeof c.imageUrl,
+              imageUrlValue: c.imageUrl,
+              imageUrlLength: c.imageUrl?.length || 0,
+              allKeys: Object.keys(c),
+            });
           });
-        });
-        
-        // Debug: Log complaints with images
-        const withImages = fetchedComplaints.filter((c: Complaint) => c.imageUrl).length;
-        console.log(`[Admin UI] Fetched ${fetchedComplaints.length} complaints, ${withImages} with images`);
-        
-        // Log first complaint with image for debugging
-        const firstWithImage = fetchedComplaints.find((c: Complaint) => c.imageUrl);
-        if (firstWithImage) {
-          console.log('[Admin UI] Sample complaint with image:', {
-            id: firstWithImage._id,
-            imageUrl: firstWithImage.imageUrl,
-            hasImageUrl: !!firstWithImage.imageUrl,
-            imageUrlPreview: firstWithImage.imageUrl?.substring(0, 100),
-          });
-        } else {
-          console.warn('[Admin UI] No complaints with images found!');
+          
+          // Debug: Log complaints with images
+          const withImages = fetchedComplaints.filter((c: Complaint) => c.imageUrl).length;
+          console.log(`[Admin UI] Fetched ${fetchedComplaints.length} complaints, ${withImages} with images`);
+          
+          // Log first complaint with image for debugging
+          const firstWithImage = fetchedComplaints.find((c: Complaint) => c.imageUrl);
+          if (firstWithImage) {
+            console.log('[Admin UI] Sample complaint with image:', {
+              id: firstWithImage._id,
+              imageUrl: firstWithImage.imageUrl,
+              hasImageUrl: !!firstWithImage.imageUrl,
+              imageUrlPreview: firstWithImage.imageUrl?.substring(0, 100),
+            });
+          } else {
+            console.warn('[Admin UI] No complaints with images found!');
+          }
+          
+          console.log('=== ADMIN UI DEBUG END ===');
         }
-        
-        console.log('=== ADMIN UI DEBUG END ===');
         
         setComplaints(fetchedComplaints);
       } else {
         toast.error(data.error || t('track.error'));
       }
     } catch (error) {
-      console.error('Error fetching complaints:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching complaints:', error);
+      }
       toast.error(t('track.error.generic'));
     } finally {
       setLoading(false);
@@ -140,6 +165,11 @@ export default function AllComplaints() {
     setUpdatingId(complaintId);
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/admin/login';
+        return;
+      }
+
       const response = await fetch('/api/complaints/update-status', {
         method: 'PATCH',
         headers: {
@@ -148,6 +178,14 @@ export default function AllComplaints() {
         },
         body: JSON.stringify({ complaintId, status: newStatus }),
       });
+
+      // Handle 401 Unauthorized - redirect to login
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = '/admin/login';
+        return;
+      }
 
       const data = await response.json();
 
@@ -158,7 +196,9 @@ export default function AllComplaints() {
         toast.error(data.error || t('track.error'));
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error updating status:', error);
+      }
       toast.error(t('track.error.generic'));
     } finally {
       setUpdatingId(null);
@@ -347,7 +387,7 @@ export default function AllComplaints() {
                                        complaint.imageUrl !== 'null' &&
                                        complaint.imageUrl !== 'undefined';
                         
-                        if (!hasImage) {
+                        if (!hasImage && process.env.NODE_ENV === 'development') {
                           // Debug why image is not showing
                           console.log(`[Admin UI] Complaint ${complaint._id} has no valid image:`, {
                             imageUrl: complaint.imageUrl,
@@ -366,16 +406,20 @@ export default function AllComplaints() {
                               alt="Complaint Evidence"
                               className="w-12 h-12 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => {
-                                console.log('[Admin UI] Opening image modal for:', complaint.imageUrl);
+                                if (process.env.NODE_ENV === 'development') {
+                                  console.log('[Admin UI] Opening image modal for:', complaint.imageUrl);
+                                }
                                 setSelectedImage(complaint.imageUrl!);
                               }}
                               onError={(e) => {
                                 // Fallback if image fails to load
-                                console.error('[Admin UI] Image load error for complaint:', {
-                                  id: complaint._id,
-                                  imageUrl: complaint.imageUrl,
-                                  error: e,
-                                });
+                                if (process.env.NODE_ENV === 'development') {
+                                  console.error('[Admin UI] Image load error for complaint:', {
+                                    id: complaint._id,
+                                    imageUrl: complaint.imageUrl,
+                                    error: e,
+                                  });
+                                }
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
                                 // Show error indicator
@@ -388,12 +432,16 @@ export default function AllComplaints() {
                                 }
                               }}
                               onLoad={() => {
-                                console.log('[Admin UI] ✅ Image loaded successfully for complaint:', complaint._id);
+                                if (process.env.NODE_ENV === 'development') {
+                                  console.log('[Admin UI] ✅ Image loaded successfully for complaint:', complaint._id);
+                                }
                               }}
                             />
                             <button
                               onClick={() => {
-                                console.log('[Admin UI] View button clicked for:', complaint.imageUrl);
+                                if (process.env.NODE_ENV === 'development') {
+                                  console.log('[Admin UI] View button clicked for:', complaint.imageUrl);
+                                }
                                 setSelectedImage(complaint.imageUrl!);
                               }}
                               className="text-blue-600 hover:text-blue-800 text-xs font-medium"

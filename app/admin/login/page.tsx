@@ -92,7 +92,10 @@ export default function AdminLogin() {
         }
       }
     } catch (error) {
-      console.error('Error:', error);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error:', error);
+      }
       toast.error(t('track.error.generic'));
     } finally {
       setLoading(false);

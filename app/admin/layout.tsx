@@ -9,6 +9,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile: open/closed
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop: expanded/collapsed
   const [isMobile, setIsMobile] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
   
@@ -18,22 +20,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     // Skip auth check on login page
     if (isLoginPage) {
+      setIsCheckingAuth(false);
+      setIsAuthenticated(false);
       return;
     }
     
-    // Check if user is logged in (in a real app, you'd verify the token)
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/admin/login');
-    } else {
+    // Check authentication synchronously on client side
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsCheckingAuth(false);
+        setIsAuthenticated(false);
+        router.push('/admin/login');
+        return;
+      }
+      
       // Decode token to get user info (simplified - in production use proper JWT decoding)
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         setUser({ name: payload.email, role: payload.role });
+        setIsAuthenticated(true);
       } catch (e) {
+        setIsCheckingAuth(false);
+        setIsAuthenticated(false);
         router.push('/admin/login');
+        return;
       }
     }
+    
+    setIsCheckingAuth(false);
   }, [router, isLoginPage]);
 
   // Initialize sidebar state and detect mobile/desktop
@@ -73,6 +88,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // If login page, render only children without Sidebar or menu button
   if (isLoginPage) {
     return <>{children}</>;
+  }
+
+  // Show nothing while checking authentication - prevents sidebar flash
+  if (isCheckingAuth) {
+    return null;
+  }
+
+  // Only render sidebar if authenticated
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (

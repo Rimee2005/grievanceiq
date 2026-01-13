@@ -2,14 +2,25 @@
 
 import Sidebar from '@/components/Sidebar';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ name?: string; role?: string } | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile: open/closed
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop: expanded/collapsed
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  
+  // Check if current route is login page
+  const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
+    // Skip auth check on login page
+    if (isLoginPage) {
+      return;
+    }
+    
     // Check if user is logged in (in a real app, you'd verify the token)
     const token = localStorage.getItem('token');
     if (!token) {
@@ -23,28 +34,83 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/admin/login');
       }
     }
-  }, [router]);
+  }, [router, isLoginPage]);
 
-  // Initialize sidebar state: hidden by default on mobile, open by default on desktop
+  // Initialize sidebar state and detect mobile/desktop
   useEffect(() => {
-    // Set initial state: closed on mobile, open on desktop
-    if (typeof window !== 'undefined') {
-      if (window.innerWidth >= 1024) {
-        setSidebarOpen(true);
-      } else {
-        setSidebarOpen(false);
-      }
+    // Skip sidebar initialization on login page
+    if (isLoginPage) {
+      return;
     }
-  }, []);
+    
+    const updateLayout = () => {
+      if (typeof window !== 'undefined') {
+        const mobile = window.innerWidth < 1024;
+        setIsMobile(mobile);
+        
+        if (mobile) {
+          // Mobile: sidebar closed by default
+          setSidebarOpen(false);
+        } else {
+          // Desktop: sidebar open (expanded) by default
+          setSidebarOpen(true);
+          setSidebarCollapsed(false);
+        }
+      }
+    };
+    
+    // Set initial state
+    updateLayout();
+    
+    // Handle window resize
+    window.addEventListener('resize', updateLayout);
+    
+    return () => {
+      window.removeEventListener('resize', updateLayout);
+    };
+  }, [isLoginPage]);
+
+  // If login page, render only children without Sidebar or menu button
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
       <Sidebar
         userName={user?.name}
         userRole={user?.role}
-        isOpen={sidebarOpen}
+        isOpen={isMobile ? sidebarOpen : true}
+        isCollapsed={!isMobile && sidebarCollapsed}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
+      
+      {/* Mobile Top App Bar with Hamburger */}
+      {isMobile && (
+        <div className="fixed top-0 left-0 right-0 h-14 bg-gray-800 dark:bg-gray-900 border-b border-gray-700 z-40 flex items-center px-4 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 hover:bg-gray-700 rounded transition-colors duration-200"
+            aria-label="Open sidebar menu"
+            title="Open Menu"
+          >
+            <svg
+              className="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
       
       {/* Main Content - Dynamically adjusts margin based on sidebar state */}
       <div 
@@ -54,38 +120,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           bg-gray-100 
           dark:bg-gray-900 
           transition-all 
-          duration-300 
+          duration-[250ms] 
           ease-in-out
-          ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}
+          ${isMobile ? 'ml-0' : sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
         `}
       >
-        {/* Toggle Button - Always visible when sidebar is closed (mobile and desktop) */}
-        {!sidebarOpen && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="fixed top-4 left-4 z-[60] p-3.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg shadow-2xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-all hover:scale-110 active:scale-95 flex items-center gap-2 group animate-pulse hover:animate-none"
-            aria-label="Open sidebar menu"
-            title="Click to open menu"
-          >
-            <svg
-              className="w-7 h-7"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-            <span className="hidden md:inline-block text-sm font-semibold whitespace-nowrap">
-              Menu
-            </span>
-          </button>
-        )}
-
         {/* Content Container - Adjusts padding based on sidebar state */}
         <div 
           className={`
@@ -93,9 +132,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             sm:p-6 
             lg:p-8 
             transition-all 
-            duration-300 
+            duration-250 
             ease-in-out
-            ${!sidebarOpen ? 'pt-20 lg:pt-16' : 'pt-8'}
+            ${isMobile ? 'pt-20' : 'pt-8'}
           `}
         >
           {children}

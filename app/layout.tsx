@@ -2,9 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import ChatButton from '@/components/ChatButton';
+import ConditionalPublicLayout from '@/components/ConditionalPublicLayout';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
@@ -25,12 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <LanguageProvider>
-            <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900 transition-colors">
-              <Navbar />
-              <main className="flex-grow pt-16">{children}</main>
-              <Footer />
-              <ChatButton />
-            </div>
+            <ConditionalPublicLayout>{children}</ConditionalPublicLayout>
             <Toaster position="top-right" />
           </LanguageProvider>
         </ThemeProvider>

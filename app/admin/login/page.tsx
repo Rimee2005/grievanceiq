@@ -24,9 +24,18 @@ export default function AdminLogin() {
     });
   };
 
+  // Helper function to set cookie
+  const setCookie = (name: string, value: string, days: number = 7) => {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    
 
     try {
       if (isLogin) {
@@ -47,8 +56,12 @@ export default function AdminLogin() {
         if (response.ok) {
           if (data.user.role !== 'Admin') {
             toast.error(t('admin.login.accessRequired'));
+            setLoading(false);
             return;
           }
+          // Set admin_token cookie (source of truth for middleware & layouts)
+          setCookie('admin_token', data.token, 7);
+          // Also set token in localStorage for Dashboard access
           localStorage.setItem('token', data.token);
           toast.success(t('admin.login.success'));
           router.push('/admin');
@@ -68,6 +81,9 @@ export default function AdminLogin() {
         const data = await response.json();
 
         if (response.ok) {
+          // Set admin_token cookie (source of truth for middleware & layouts)
+          setCookie('admin_token', data.token, 7);
+          // Also set token in localStorage for Dashboard access
           localStorage.setItem('token', data.token);
           toast.success(t('admin.register.success'));
           router.push('/admin');
@@ -160,4 +176,3 @@ export default function AdminLogin() {
     </div>
   );
 }
-

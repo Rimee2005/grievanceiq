@@ -110,8 +110,26 @@ export default function AllComplaints() {
 
       const data = await response.json();
 
+      // Always log response for debugging (even in production, but can be removed)
+      console.log('[Admin Complaints] API Response:', {
+        ok: response.ok,
+        status: response.status,
+        complaintsCount: data.complaints?.length || 0,
+        hasComplaints: !!data.complaints,
+        error: data.error,
+      });
+
       if (response.ok) {
         const fetchedComplaints = data.complaints || [];
+        
+        console.log('[Admin Complaints] ✅ Fetched complaints:', {
+          count: fetchedComplaints.length,
+          firstComplaint: fetchedComplaints[0] ? {
+            id: fetchedComplaints[0]._id,
+            name: fetchedComplaints[0].name,
+            category: fetchedComplaints[0].category,
+          } : null,
+        });
         
         // Debug logging only in development
         if (process.env.NODE_ENV === 'development') {
@@ -148,13 +166,26 @@ export default function AllComplaints() {
         }
         
         setComplaints(fetchedComplaints);
+        
+        // Show success message if complaints were found
+        if (fetchedComplaints.length > 0) {
+          console.log(`[Admin Complaints] ✅ Successfully loaded ${fetchedComplaints.length} complaints`);
+        } else {
+          console.warn('[Admin Complaints] ⚠️ No complaints found (check filters or database)');
+        }
       } else {
+        console.error('[Admin Complaints] ❌ API Error:', {
+          status: response.status,
+          error: data.error,
+          details: data.details,
+        });
         toast.error(data.error || t('track.error'));
       }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error fetching complaints:', error);
-      }
+    } catch (error: any) {
+      console.error('[Admin Complaints] ❌ Fetch Error:', {
+        message: error.message,
+        stack: error.stack,
+      });
       toast.error(t('track.error.generic'));
     } finally {
       setLoading(false);

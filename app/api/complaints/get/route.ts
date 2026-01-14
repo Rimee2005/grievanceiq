@@ -6,7 +6,20 @@ import { getTokenFromRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    // Connect to database with error handling
+    try {
+      await connectDB();
+      console.log('[Complaints Get] ✅ Database connected');
+    } catch (dbError: any) {
+      console.error('[Complaints Get] ❌ Database connection failed:', {
+        error: dbError.message,
+        code: dbError.code,
+      });
+      return NextResponse.json(
+        { error: 'Database connection failed', details: dbError.message },
+        { status: 500 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const complaintId = searchParams.get('id');
@@ -89,13 +102,37 @@ export async function GET(request: NextRequest) {
       if (isDuplicate === 'true') filter.isDuplicate = true;
       if (isDuplicate === 'false') filter.isDuplicate = false;
 
-      const complaints = await Complaint.find(filter)
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip((page - 1) * limit)
-        .lean(); // Use lean() for better performance
-
-      const total = await Complaint.countDocuments(filter);
+      // Query complaints with error handling
+      let complaints;
+      let total;
+      
+      try {
+        complaints = await Complaint.find(filter)
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .skip((page - 1) * limit)
+          .lean(); // Use lean() for better performance
+        
+        total = await Complaint.countDocuments(filter);
+        
+        console.log('[Complaints Get] 📊 Query results:', {
+          found: complaints.length,
+          total,
+          page,
+          limit,
+          filter,
+        });
+      } catch (queryError: any) {
+        console.error('[Complaints Get] ❌ Database query failed:', {
+          error: queryError.message,
+          code: queryError.code,
+          filter,
+        });
+        return NextResponse.json(
+          { error: 'Failed to query complaints', details: queryError.message },
+          { status: 500 }
+        );
+      }
 
       // COMPREHENSIVE DEBUG: Log raw database results
       console.log('=== ADMIN API DEBUG START ===');

@@ -17,10 +17,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    await connectDB();
+    // Connect to database with error handling
+    try {
+      await connectDB();
+      console.log('[Analytics] ✅ Database connected');
+    } catch (dbError: any) {
+      console.error('[Analytics] ❌ Database connection failed:', {
+        error: dbError.message,
+        code: dbError.code,
+      });
+      return NextResponse.json(
+        { error: 'Database connection failed', details: dbError.message },
+        { status: 500 }
+      );
+    }
 
-    // Get all complaints for analytics
-    const complaints = await Complaint.find({});
+    // Get all complaints for analytics with error handling
+    let complaints;
+    try {
+      complaints = await Complaint.find({});
+      console.log('[Analytics] 📊 Found', complaints.length, 'complaints in database');
+    } catch (queryError: any) {
+      console.error('[Analytics] ❌ Database query failed:', {
+        error: queryError.message,
+        code: queryError.code,
+      });
+      return NextResponse.json(
+        { error: 'Failed to query complaints', details: queryError.message },
+        { status: 500 }
+      );
+    }
 
     // Calculate statistics
     const totalComplaints = complaints.length;

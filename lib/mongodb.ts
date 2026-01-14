@@ -1,6 +1,22 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/grievanceiq';
+// Debug: Log environment variable status
+const envMongoDBUri = process.env.MONGODB_URI;
+console.log('[MongoDB Config] Environment check:', {
+  hasEnvVar: !!envMongoDBUri,
+  envVarLength: envMongoDBUri?.length || 0,
+  startsWithMongo: envMongoDBUri?.startsWith('mongodb') || false,
+  // Don't log the full URI for security, just first few chars
+  uriPreview: envMongoDBUri ? `${envMongoDBUri.substring(0, 20)}...` : 'NOT SET',
+});
+
+const MONGODB_URI = envMongoDBUri || 'mongodb://localhost:27017/grievanceiq';
+
+if (!envMongoDBUri) {
+  console.warn('[MongoDB Config] ⚠️ MONGODB_URI not found in environment variables!');
+  console.warn('[MongoDB Config] Using fallback: mongodb://localhost:27017/grievanceiq');
+  console.warn('[MongoDB Config] To fix: Ensure .env.local contains MONGODB_URI and restart the dev server');
+}
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
@@ -40,8 +56,10 @@ async function connectDB() {
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
       console.log('[MongoDB] ✅ Connected successfully!', {
         readyState: mongoose.connection.readyState,
-        name: mongoose.connection.name,
+        dbName: mongoose.connection.name,
         host: mongoose.connection.host,
+        port: mongoose.connection.port,
+        connectionString: MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@'),
       });
       return mongoose;
     });
@@ -52,6 +70,9 @@ async function connectDB() {
     console.log('[MongoDB] ✅ Connection established', {
       readyState: cached.conn.connection.readyState,
       dbName: cached.conn.connection.name,
+      host: cached.conn.connection.host,
+      port: cached.conn.connection.port,
+      collections: Object.keys(cached.conn.connection.collections),
     });
   } catch (e: any) {
     cached.promise = null;

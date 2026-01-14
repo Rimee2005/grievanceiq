@@ -193,16 +193,46 @@ export async function POST(request: NextRequest) {
       imageUrlType: typeof complaint.imageUrl,
     });
 
-    await complaint.save();
+    // Save complaint with error handling
+    try {
+      await complaint.save();
+      console.log('[Complaint Create] ✅ Complaint saved successfully with ID:', complaint._id);
+    } catch (saveError: any) {
+      console.error('[Complaint Create] ❌ Error saving complaint:', {
+        error: saveError.message,
+        code: saveError.code,
+        name: saveError.name,
+        stack: saveError.stack,
+      });
+      throw saveError; // Re-throw to be caught by outer try-catch
+    }
 
-    // Verify what was actually saved
-    const savedComplaint = await Complaint.findById(complaint._id);
-    console.log('✅ Complaint saved!', {
-      id: complaint._id,
-      hasImageUrl: !!savedComplaint?.imageUrl,
-      imageUrl: savedComplaint?.imageUrl,
-      imageUrlType: typeof savedComplaint?.imageUrl,
-    });
+    // Verify what was actually saved by querying the database
+    let savedComplaint;
+    try {
+      savedComplaint = await Complaint.findById(complaint._id);
+      if (!savedComplaint) {
+        console.error('[Complaint Create] ❌ CRITICAL: Complaint was saved but cannot be retrieved!', {
+          complaintId: complaint._id,
+        });
+        throw new Error('Complaint was saved but cannot be retrieved from database');
+      }
+      console.log('[Complaint Create] ✅ Complaint verified in database:', {
+        id: savedComplaint._id,
+        name: savedComplaint.name,
+        email: savedComplaint.email,
+        category: savedComplaint.category,
+        hasImageUrl: !!savedComplaint.imageUrl,
+        imageUrl: savedComplaint.imageUrl ? savedComplaint.imageUrl.substring(0, 50) + '...' : null,
+        createdAt: savedComplaint.createdAt,
+      });
+    } catch (verifyError: any) {
+      console.error('[Complaint Create] ❌ Error verifying saved complaint:', {
+        error: verifyError.message,
+        complaintId: complaint._id,
+      });
+      // Don't throw here - the complaint was saved, verification is just for debugging
+    }
 
     // Send confirmation email to user
     console.log('[Complaint Create] 📧 Sending submission confirmation email...', {

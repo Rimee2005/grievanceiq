@@ -13,6 +13,8 @@
 
 </div>
 
+# Deployed Link: https://grievanceiq.vercel.app/
+
 ---
 
 ## 📋 Table of Contents

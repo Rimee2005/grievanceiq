@@ -1,4 +1,4 @@
-# GrievanceIQ - AI-Powered Grievance Redressal System
+# GrievanceIQ - Grievance Redressal System
 
 <div align="center">
 
